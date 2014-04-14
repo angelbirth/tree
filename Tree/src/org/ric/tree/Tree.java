@@ -49,8 +49,37 @@ public class Tree<E extends Comparable<E>> implements Serializable {
         }
     }
 
+    private TreeNode<E> root;
+
     public Tree() {
-        // TODO Auto-generated constructor stub
+        root = null;
     }
 
+    public TreeNode<E> getRoot() {
+        return root;
+    }
+
+    private void insert(E data, TreeNode<E> root) {
+        if (data.compareTo(root.data) < 0) {
+            if (root.left == null) {
+                root.left = new TreeNode<>(data, root);
+            } else {
+                insert(data, root.left);
+            }
+        } else if (data.compareTo(root.data) > 0) {
+            if (root.right == null) {
+                root.right = new TreeNode<>(data, root);
+            } else {
+                insert(data, root.right);
+            }
+        }
+    }
+
+    public void insert(E data) {
+        if (root == null) {
+            root = new TreeNode<>(data);
+        } else {
+            insert(data, root);
+        }
+    }
 }
