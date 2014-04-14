@@ -50,6 +50,28 @@ public class Tree<E extends Comparable<E>> implements Serializable {
         void setParent(TreeNode<T> parent) {
             this.parent = parent;
         }
+
+        boolean isLeaf() {
+            return left == null && right == null;
+        }
+
+        boolean isRoot() {
+            return parent == null;
+        }
+
+        int height() {
+            if (isLeaf()) {
+                return 1;
+            } else {
+                if (left != null && right == null) {
+                    return left.height() + 1;
+                } else if (left == null && right != null) {
+                    return right.height() + 1;
+                } else {
+                    return Math.max(left.height(), right.height()) + 1;
+                }
+            }
+        }
     }
 
     private TreeNode<E> root;
@@ -132,4 +154,18 @@ public class Tree<E extends Comparable<E>> implements Serializable {
     public void traverse(int order) {
         traverse(order, x -> System.out.print(x + " "));
     }
+
+    public TreeNode<?> find(E data) {
+        TreeNode<E> i = root;
+        while (i != null) {
+            if (data.compareTo(i.data) < 0) {
+                i = i.left;
+            } else if (data.compareTo(i.data) > 0) {
+                i = i.right;
+            } else
+                return i;
+        }
+        return null;
+    }
+
 }
