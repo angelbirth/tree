@@ -1,120 +1,28 @@
 package org.ric.tree;
 
 import java.io.Serializable;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 
 public class Tree<E extends Comparable<E>> implements Serializable {
     public static final int PREORDER = 0, INORDER = 1, POSTORDER = 2;
 
-    public static class TreeNode<T extends Comparable<T>> {
-        private T data;
-        private TreeNode<T> left, right, parent;
-
-        public TreeNode(T data, TreeNode<T> parent) {
-            this.data = data;
-            this.parent = parent;
-        }
-
-        public boolean equals(TreeNode<T> n) {
-            if (n == null)
-                return false;
-            if (!data.equals(n.data) && data.compareTo(n.data) != 0)
-                return false;
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            // TODO Auto-generated method stub
-            return data.toString();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null)
-                return false;
-            if (!(obj instanceof TreeNode<?>))
-                return false;
-            return equals((TreeNode<T>) obj);
-        }
-
-        public TreeNode(T data) {
-            this(data, null);
-        }
-
-        public T getData() {
-            return data;
-        }
-
-        public void setData(T data) {
-            this.data = data;
-        }
-
-        public TreeNode<T> getLeft() {
-            return left;
-        }
-
-        void setLeft(TreeNode<T> left) {
-            this.left = left;
-        }
-
-        public TreeNode<T> getRight() {
-            return right;
-        }
-
-        void setRight(TreeNode<T> right) {
-            this.right = right;
-        }
-
-        public TreeNode<T> getParent() {
-            return parent;
-        }
-
-        void setParent(TreeNode<T> parent) {
-            this.parent = parent;
-        }
-
-        boolean isLeaf() {
-            return left == null && right == null;
-        }
-
-        boolean isRoot() {
-            return parent == null;
-        }
-
-        int height() {
-            if (isLeaf()) {
-                return 1;
-            } else {
-                if (left != null && right == null) {
-                    return left.height() + 1;
-                } else if (left == null && right != null) {
-                    return right.height() + 1;
-                } else {
-                    return Math.max(left.height(), right.height()) + 1;
-                }
+    static <E extends Comparable<E>> TreeNode<E> successor(TreeNode<E> t) {
+        if (t == null)
+            return null;
+        else if (t.right != null) {
+            TreeNode<E> p = t.right;
+            while (p.left != null) {
+                p = p.left;
             }
-        }
-
-        private boolean isLeftChild() {
-            if (isRoot())
-                return false;
-            return parent.left == this;
-        }
-
-        private boolean isRightChild() {
-            if (isRoot())
-                return false;
-            return parent.right == this;
-        }
-
-        int childCount() {
-            if (isLeaf())
-                return 0;
-            if (left != null && right != null)
-                return 2;
-            return 1;
+            return p;
+        } else {
+            TreeNode<E> p = t.parent;
+            TreeNode<E> ch = t;
+            while (p != null && ch == p.right) {
+                ch = p;
+                p = p.parent;
+            }
+            return p;
         }
     }
 
@@ -124,24 +32,21 @@ public class Tree<E extends Comparable<E>> implements Serializable {
         root = null;
     }
 
-    public TreeNode<E> getRoot() {
-        return root;
+    public TreeNode<E> find(E data) {
+        TreeNode<E> i = root;
+        while (i != null) {
+            if (data.compareTo(i.data) < 0) {
+                i = i.left;
+            } else if (data.compareTo(i.data) > 0) {
+                i = i.right;
+            } else
+                return i;
+        }
+        return null;
     }
 
-    private void insert(E data, TreeNode<E> root) {
-        if (data.compareTo(root.data) < 0) {
-            if (root.left == null) {
-                root.left = new TreeNode<>(data, root);
-            } else {
-                insert(data, root.left);
-            }
-        } else if (data.compareTo(root.data) > 0) {
-            if (root.right == null) {
-                root.right = new TreeNode<>(data, root);
-            } else {
-                insert(data, root.right);
-            }
-        }
+    public TreeNode<E> getRoot() {
+        return root;
     }
 
     public void insert(E data) {
@@ -152,31 +57,22 @@ public class Tree<E extends Comparable<E>> implements Serializable {
         }
     }
 
-    private void preOrder(TreeNode<E> localRoot, Consumer<E> action) {
-        if (localRoot == null) {
-            return;
+    public TreeNode<E> remove(E data) {
+        TreeNode<E> del = find(data);
+        if (del == null)
+            return null;
+        switch (del.childCount()) {
+        case 0:
+        case 1:
+            return remove01(del);
+        default:
+            return remove2(del);
         }
-        action.accept(localRoot.data);
-        preOrder(localRoot.left, action);
-        preOrder(localRoot.right, action);
     }
 
-    private void inOrder(TreeNode<E> localRoot, Consumer<E> action) {
-        if (localRoot == null) {
-            return;
-        }
-        inOrder(localRoot.left, action);
-        action.accept(localRoot.data);
-        inOrder(localRoot.right, action);
-    }
-
-    private void postOrder(TreeNode<E> localRoot, Consumer<E> action) {
-        if (localRoot == null) {
-            return;
-        }
-        postOrder(localRoot.left, action);
-        postOrder(localRoot.right, action);
-        action.accept(localRoot.data);
+    public void traverse(int order) {
+        traverse(order, x -> System.out.print(x + " "));
+        System.out.println();
     }
 
     public void traverse(int order, Consumer<E> action) {
@@ -195,28 +91,49 @@ public class Tree<E extends Comparable<E>> implements Serializable {
         }
     }
 
-    public void traverse(int order) {
-        traverse(order, x -> System.out.print(x + " "));
-        System.out.println();
+    private void inOrder(TreeNode<E> localRoot, Consumer<E> action) {
+        if (localRoot == null)
+            return;
+        inOrder(localRoot.left, action);
+        action.accept(localRoot.data);
+        inOrder(localRoot.right, action);
     }
 
-    public TreeNode<E> find(E data) {
-        TreeNode<E> i = root;
-        while (i != null) {
-            if (data.compareTo(i.data) < 0) {
-                i = i.left;
-            } else if (data.compareTo(i.data) > 0) {
-                i = i.right;
-            } else
-                return i;
+    private void insert(E data, TreeNode<E> root) {
+        if (data.compareTo(root.data) < 0) {
+            if (root.left == null) {
+                root.left = new TreeNode<>(data, root);
+            } else {
+                insert(data, root.left);
+            }
+        } else if (data.compareTo(root.data) > 0) {
+            if (root.right == null) {
+                root.right = new TreeNode<>(data, root);
+            } else {
+                insert(data, root.right);
+            }
         }
-        return null;
+    }
+
+    private void postOrder(TreeNode<E> localRoot, Consumer<E> action) {
+        if (localRoot == null)
+            return;
+        postOrder(localRoot.left, action);
+        postOrder(localRoot.right, action);
+        action.accept(localRoot.data);
+    }
+
+    private void preOrder(TreeNode<E> localRoot, Consumer<E> action) {
+        if (localRoot == null)
+            return;
+        action.accept(localRoot.data);
+        preOrder(localRoot.left, action);
+        preOrder(localRoot.right, action);
     }
 
     private TreeNode<E> remove01(TreeNode<E> node) {
-        if (node.left != null && node.right != null) {
+        if (node.left != null && node.right != null)
             throw new IllegalStateException();
-        }
         if (node.isRoot()) {
             if (node.isLeaf()) {
                 root = null;
@@ -258,43 +175,123 @@ public class Tree<E extends Comparable<E>> implements Serializable {
             }
         }
         // upward
-        if (node.left != null)
+        if (node.left != null) {
             node.left.parent = successor;
-        if (node.right != null)
+        }
+        if (node.right != null) {
             node.right.parent = successor;
+        }
         node.left = node.right = node.parent = null;
         return node;
     }
 
-    public TreeNode<E> remove(E data) {
-        TreeNode<E> del = find(data);
-        if (del == null)
-            return null;
-        switch (del.childCount()) {
-        case 0:
-        case 1:
-            return remove01(del);
-        default:
-            return remove2(del);
-        }
-    }
+    public static class TreeNode<T extends Comparable<T>> {
+        private T data;
+        private TreeNode<T> left, right, parent;
 
-    static <E extends Comparable<E>> TreeNode<E> successor(TreeNode<E> t) {
-        if (t == null)
-            return null;
-        else if (t.right != null) {
-            TreeNode<E> p = t.right;
-            while (p.left != null)
-                p = p.left;
-            return p;
-        } else {
-            TreeNode<E> p = t.parent;
-            TreeNode<E> ch = t;
-            while (p != null && ch == p.right) {
-                ch = p;
-                p = p.parent;
+        public TreeNode(T data) {
+            this(data, null);
+        }
+
+        public TreeNode(T data, TreeNode<T> parent) {
+            this.data = data;
+            this.parent = parent;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null)
+                return false;
+            if (!(obj instanceof TreeNode<?>))
+                return false;
+            return equals((TreeNode<T>) obj);
+        }
+
+        public boolean equals(TreeNode<T> n) {
+            if (n == null)
+                return false;
+            if (!data.equals(n.data) && data.compareTo(n.data) != 0)
+                return false;
+            return true;
+        }
+
+        public T getData() {
+            return data;
+        }
+
+        public TreeNode<T> getLeft() {
+            return left;
+        }
+
+        public TreeNode<T> getParent() {
+            return parent;
+        }
+
+        public TreeNode<T> getRight() {
+            return right;
+        }
+
+        public void setData(T data) {
+            this.data = data;
+        }
+
+        @Override
+        public String toString() {
+            // TODO Auto-generated method stub
+            return data.toString();
+        }
+
+        int childCount() {
+            if (isLeaf())
+                return 0;
+            if (left != null && right != null)
+                return 2;
+            return 1;
+        }
+
+        int height() {
+            if (isLeaf())
+                return 1;
+            else {
+                if (left != null && right == null)
+                    return left.height() + 1;
+                else if (left == null && right != null)
+                    return right.height() + 1;
+                else
+                    return Math.max(left.height(), right.height()) + 1;
             }
-            return p;
+        }
+
+        boolean isLeaf() {
+            return left == null && right == null;
+        }
+
+        boolean isRoot() {
+            return parent == null;
+        }
+
+        void setLeft(TreeNode<T> left) {
+            this.left = left;
+        }
+
+        void setParent(TreeNode<T> parent) {
+            this.parent = parent;
+        }
+
+        void setRight(TreeNode<T> right) {
+            this.right = right;
+        }
+
+        private boolean isLeftChild() {
+            if (isRoot())
+                return false;
+            return parent.left == this;
+        }
+
+        private boolean isRightChild() {
+            if (isRoot())
+                return false;
+            return parent.right == this;
         }
     }
 }
